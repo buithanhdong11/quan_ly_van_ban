@@ -5,93 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Quản lý đoạn văn</title>
   <style>
-    /* Base styles */
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px auto;
-      max-width: 800px;
-      color: #222;
-      background: #f5f5f5;
-    }
-    #controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-      align-items: center;
-    }
-    input, button, select {
-      font-size: 16px;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px auto; max-width: 800px; color: #222; background: #f5f5f5; }
+    #controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; align-items: center; }
+    input, button, select { font-size: 16px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
     input { flex: 1 1 200px; }
     button { cursor: pointer; background: #f0f0f0; }
-
-    /* Forms & paragraphs */
-    .input-form, .paragraph {
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      background: #f9f9f9;
-      padding: 10px;
-      margin-bottom: 15px;
-      position: relative;
-    }
+    .input-form, .paragraph { border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9; padding: 10px; margin-bottom: 15px; position: relative; }
     .title-input { width: 100%; margin-bottom: 10px; font-size: 16px; padding: 6px; }
-    .content-editor {
-      width: 100%; min-height: 100px; padding: 8px;
-      border: 1px solid #ccc; border-radius: 3px;
-      margin-bottom: 10px; overflow-y: auto;
-    }
+    .content-editor { width: 100%; min-height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 10px; overflow-y: auto; }
     .content-editor:empty:before { content: attr(placeholder); color: #aaa; }
-
-    /* Paragraph display */
     .paragraph-id { font-size: 14px; color: #666; margin-bottom: 5px; }
-    .paragraph-title {
-      font-weight: bold; margin-bottom: 8px;
-      background-color: rgba(0,255,255,0.1);
-      display: inline-block; padding: 2px 4px; border-radius: 3px;
-    }
-    .paragraph-content {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+    .paragraph-title { font-weight: bold; margin-bottom: 8px; background-color: rgba(0,255,255,0.1); display: inline-block; padding: 2px 4px; border-radius: 3px; }
+    .paragraph-content { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     .paragraph-content.expanded { display: block; }
-    .toggle-btn {
-      display: inline-block; margin-top: 6px;
-      font-size: 14px; color: #007bff; cursor: pointer;
-    }
-    .edit-btn, .delete-btn {
-      background: none; border: none;
-      cursor: pointer; font-size: 18px;
-      margin-left: 10px;
-    }
-    .timestamp { font-size: 12px; color: #999; margin-top: 6px; }
-
-    /* Highlight styles */
+    .toggle-btn { display: inline-block; margin-top: 6px; font-size: 14px; color: #007bff; cursor: pointer; }
+    .paragraph .edit-btn, .paragraph .delete-btn { background: none; border: none; cursor: pointer; font-size: 18px; margin-left: 10px; vertical-align: middle; }
     .pre-highlight { background-color: rgba(255,0,0,0.1); font-style: italic; }
     mark { background-color: yellow; }
     .custom-highlight { background-color: rgba(255,0,0,0.2); font-style: italic; font-weight: bold; }
     .highlight-list { margin-top: 10px; }
     .highlight-label { font-size: 18px; color: #F4A460; margin-right: 8px; }
-    .highlight-item {
-      margin-right: 8px; cursor: pointer;
-      text-decoration: underline;
-      font-size: 17px; color: #AEEEEE;
-    }
-
-    /* Selection toolbar */
-    #selectionToolbar {
-      position: absolute; display: none;
-      background: #fff; border: 1px solid #ccc;
-      border-radius: 4px; padding: 4px; z-index: 1000;
-    }
+    .highlight-item { margin-right: 8px; cursor: pointer; text-decoration: underline; font-size: 17px; color: #AEEEEE; }
+    #selectionToolbar { position: absolute; display: none; background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 4px; z-index: 1000; }
     #selectionToolbar button { margin: 0 2px; }
-
-    /* Dark mode */
+    .timestamp { font-size: 12px; color: #999; margin-top: 6px; }
     @media (prefers-color-scheme: dark) {
       body { background: #121212; color: #e0e0e0; }
       input, button, select { background: #1e1e1e; color: #e0e0e0; border-color: #333; }
@@ -111,7 +48,7 @@
 </head>
 <body>
   <div id="controls">
-    <input id="searchInput" placeholder="Nhập từ tìm kiếm...">
+    <input type="text" id="searchInput" placeholder="Nhập từ tìm kiếm...">
     <select id="searchMode">
       <option value="content">Tìm kiếm nội dung</option>
       <option value="title">Tìm kiếm tiêu đề</option>
@@ -125,243 +62,242 @@
     <button id="selHighlightBtn">Highlight</button>
     <button id="selUnhighlightBtn">Unhighlight</button>
   </div>
-
   <script>
-  (function() {
-    // Helper to create elements
-    const create = (tag, className, text) => {
-      const el = document.createElement(tag);
-      if (className) el.className = className;
-      if (text) el.textContent = text;
-      return el;
-    };
-
     class StorageManager {
-      save(pars, id) {
-        localStorage.setItem('paragraphs', JSON.stringify(pars));
-        localStorage.setItem('lastId', id);
-      }
+      save(paragraphs, lastId) { localStorage.setItem('paragraphs', JSON.stringify(paragraphs)); localStorage.setItem('lastId', lastId); }
       load() {
         const data = JSON.parse(localStorage.getItem('paragraphs')) || [];
-        let lastId = parseInt(localStorage.getItem('lastId'),10) || 0;
-        lastId = Math.max(lastId, ...data.map(p => p.id));
+        let lastId = parseInt(localStorage.getItem('lastId'), 10) || 0;
+        lastId = Math.max(lastId, data.reduce((m, p) => Math.max(m, p.id), 0));
         const now = Date.now();
-        const valid = data.filter(p => p.expireAt > now).map(p => ({ ...p, highlights: p.highlights||[] }));
+        const valid = data.filter(p => p.expireAt > now);
+        valid.forEach(p => p.highlights = p.highlights || []);
         return { paragraphs: valid, lastId };
       }
     }
-
+    class HighlightManager {
+      static stripHTML(html) { const d = document.createElement('div'); d.innerHTML = html; return d.textContent || ''; }
+      static escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+      static highlightElement(el, regex) {
+        Array.from(el.childNodes).forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const txt = node.textContent;
+            let match, last = 0;
+            const frag = document.createDocumentFragment();
+            regex.lastIndex = 0;
+            while ((match = regex.exec(txt)) !== null) {
+              if (match.index > last) frag.appendChild(document.createTextNode(txt.slice(last, match.index)));
+              const mark = document.createElement('mark'); mark.textContent = match[0]; frag.appendChild(mark);
+              last = match.index + match[0].length;
+            }
+            if (last > 0) {
+              if (last < txt.length) frag.appendChild(document.createTextNode(txt.slice(last)));
+              node.replaceWith(frag);
+            }
+          } else if (node.nodeType === Node.ELEMENT_NODE) {
+            this.highlightElement(node, regex);
+          }
+        });
+      }
+    }
     class ParagraphManager {
       constructor() {
-        const sm = new StorageManager();
-        const d = sm.load();
+        this.storage = new StorageManager();
+        const d = this.storage.load();
         this.paragraphs = d.paragraphs;
         this.lastId = d.lastId;
-        this.storage = sm;
       }
-      add(title, content) {
+      addParagraph(title, content) {
         const now = Date.now();
         const exp = new Date(now);
-        exp.setFullYear(exp.getFullYear() + (this.paragraphs.length?5:10));
-        this.paragraphs.push({
-          id: ++this.lastId,
-          title, content,
-          createdAt: now,
-          expireAt: exp.getTime(),
-          highlights: []
-        });
+        exp.setFullYear(exp.getFullYear() + (this.paragraphs.length ? 5 : 10));
+        const p = { id: ++this.lastId, title, content, createdAt: now, expireAt: exp.getTime(), highlights: [] };
+        this.paragraphs.push(p);
         this.save();
       }
-      update(id, title, content) {
-        const p = this.paragraphs.find(x => x.id===id);
-        if (p) Object.assign(p, { title, content });
-        this.save();
+      updateParagraph(id, title, content) {
+        const p = this.paragraphs.find(x => x.id === id);
+        if (p) { p.title = title; p.content = content; this.save(); }
       }
-      delete(id) {
-        this.paragraphs = this.paragraphs.filter(x=>x.id!==id)
-          .map((x,i)=>({ ...x, id: i+1 }));
+      deleteParagraph(id) {
+        this.paragraphs = this.paragraphs.filter(x => x.id !== id)
+          .map((x, i) => ({ ...x, id: i + 1 }));
         this.lastId = this.paragraphs.length;
         this.save();
       }
-      highlight(id, word) {
-        const p = this.paragraphs.find(x=>x.id===id);
-        if (p && !p.highlights.includes(word)) p.highlights.push(word);
-        this.save();
+      highlightWord(id, word) {
+        const p = this.paragraphs.find(x => x.id === id);
+        if (p && !p.highlights.includes(word)) { p.highlights.push(word); this.save(); }
       }
-      unhighlight(id, word) {
-        const p = this.paragraphs.find(x=>x.id===id);
-        if (p) p.highlights = p.highlights.filter(w=>w!==word);
-        this.save();
+      removeHighlight(id, word) {
+        const p = this.paragraphs.find(x => x.id === id);
+        if (p) { p.highlights = p.highlights.filter(w => w !== word); this.save(); }
       }
-      save() {
-        this.storage.save(this.paragraphs, this.lastId);
+      getParagraphs() {
+        const now = Date.now();
+        return this.paragraphs.filter(p => p.expireAt > now).sort((a, b) => a.id - b.id);
       }
-      getAll() {
-        return this.paragraphs
-          .filter(p => p.expireAt > Date.now())
-          .sort((a,b)=>a.id-b.id);
-      }
+      save() { this.storage.save(this.paragraphs, this.lastId); }
     }
-
-    class UI {
+    class UIManager {
       constructor() {
         this.pm = new ParagraphManager();
         this.searchMode = 'content';
-        this.expanded = new Set();
+        this.allExpanded = false;
+        this.expandedParagraphs = new Set();
         this.selRange = null;
-        this.init();
-      }
-      init() {
-        this.bindDOM();
+        this.cacheDOM();
         this.bindEvents();
         this.render();
       }
-      bindDOM() {
+      cacheDOM() {
         this.searchInput = document.getElementById('searchInput');
-        this.searchModeSel = document.getElementById('searchMode');
+        this.searchModeSelect = document.getElementById('searchMode');
         this.addBtn = document.getElementById('addBtn');
         this.toggleAllBtn = document.getElementById('toggleAllBtn');
         this.inputArea = document.getElementById('inputArea');
-        this.parsContainer = document.getElementById('paragraphs');
-        this.toolbar = document.getElementById('selectionToolbar');
-        this.btnH = document.getElementById('selHighlightBtn');
-        this.btnU = document.getElementById('selUnhighlightBtn');
+        this.paragraphsContainer = document.getElementById('paragraphs');
+        this.selToolbar = document.getElementById('selectionToolbar');
+        this.selHBtn = document.getElementById('selHighlightBtn');
+        this.selUBtn = document.getElementById('selUnhighlightBtn');
       }
       bindEvents() {
-        this.searchModeSel.onchange = () => this.render();
-        this.searchInput.oninput = () => this.render();
-        this.addBtn.onclick = () => this.showForm();
-        this.toggleAllBtn.onclick = () => this.toggleAll();
-        this.parsContainer.onmouseup = e => this.checkSelection(e);
-        this.btnH.onclick = () => this.applyHighlight();
-        this.btnU.onclick = () => this.applyUnhighlight();
-        document.onmousedown = e => {
-          if (!this.toolbar.contains(e.target)) this.hideToolbar();
-        };
+        this.searchModeSelect.addEventListener('change', () => { this.searchMode = this.searchModeSelect.value; this.render(); });
+        this.addBtn.addEventListener('click', () => this.addInputForm());
+        this.toggleAllBtn.addEventListener('click', () => this.toggleAll());
+        this.searchInput.addEventListener('input', () => this.render());
+        this.paragraphsContainer.addEventListener('mouseup', e => this.onTextSelect(e));
+        this.selHBtn.addEventListener('click', () => this.applyHighlight());
+        this.selUBtn.addEventListener('click', () => this.applyUnhighlight());
+        document.addEventListener('mousedown', e => { if (!this.selToolbar.contains(e.target)) this.hideToolbar(); });
       }
-      showForm(existing) {
+      addInputForm(existing) {
         this.inputArea.innerHTML = '';
-        const form = create('div','input-form');
-        const ti = create('input','title-input'); ti.placeholder='Tiêu đề đoạn văn';
-        const cd = create('div','content-editor'); cd.contentEditable='true'; cd.setAttribute('placeholder','Nhập nội dung...');
-        const btn = create('button',null, existing?'💾 Lưu thay đổi':'💾 Lưu đoạn văn');
-        btn.onclick = () => {
-          const t=ti.value.trim(), c=cd.innerHTML.trim();
-          if (!t||!c) return alert('Vui lòng nhập cả tiêu đề và nội dung!');
-          if (existing) this.pm.update(existing.id,t,c);
-          else this.pm.add(t,c);
+        const form = document.createElement('div'); form.className = 'input-form';
+        const titleInput = document.createElement('input'); titleInput.className = 'title-input'; titleInput.placeholder = 'Tiêu đề đoạn văn';
+        const contentDiv = document.createElement('div'); contentDiv.contentEditable = 'true'; contentDiv.className = 'content-editor'; contentDiv.setAttribute('placeholder', 'Nhập nội dung...');
+        const saveBtn = document.createElement('button'); saveBtn.textContent = existing ? '💾 Lưu thay đổi' : '💾 Lưu đoạn văn';
+        saveBtn.addEventListener('click', () => {
+          const t = titleInput.value.trim(), c = contentDiv.innerHTML.trim();
+          if (!t || !c) { alert('Vui lòng nhập cả tiêu đề và nội dung!'); return; }
+          if (existing) this.pm.updateParagraph(existing.id, t, c);
+          else this.pm.addParagraph(t, c);
           this.render();
           this.inputArea.innerHTML = '';
-        };
-        if (existing) { ti.value=existing.title; cd.innerHTML=existing.content; }
-        form.append(ti,cd,btn);
-        this.inputArea.append(form);
-        cd.focus();
+        });
+        if (existing) { titleInput.value = existing.title; contentDiv.innerHTML = existing.content; }
+        form.append(titleInput, contentDiv, saveBtn);
+        this.inputArea.appendChild(form);
+        contentDiv.focus();
       }
       render() {
-        this.parsContainer.innerHTML = '';
+        this.paragraphsContainer.innerHTML = '';
         const term = this.searchInput.value.trim();
-        const mode = this.searchModeSel.value;
-        const regex = term?new RegExp(term.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&'),'gi'):null;
-        this.pm.getAll().forEach(p => {
-          if (regex && !(mode==='content'?regex.test(p.content.replace(/<[^>]+>/g,'')):regex.test(p.title))) return;
-          this.parsContainer.append(this.makeParagraph(p,regex,mode));
-        });
+        let list = this.pm.getParagraphs();
+        if (term) {
+          const regex = new RegExp(HighlightManager.escapeRegExp(term), 'gi');
+          list = list.filter(p => this.searchMode === 'content'
+            ? regex.test(HighlightManager.stripHTML(p.content))
+            : regex.test(p.title));
+        }
+        list.forEach(p => this.renderParagraph(p, term));
       }
-      makeParagraph(p,regex,mode) {
-        const div = create('div','paragraph');
-        div.append(create('div','paragraph-id',`Đoạn ${p.id}`));
-        // Title
-        const td = create('div','paragraph-title');
-        td.textContent = p.title;
-        if (regex && mode==='title') HighlightManager.highlightElement(td,regex);
-        div.append(td);
-        // Content
-        const cd = create('div','paragraph-content');
-        let temp = document.createElement('div');
-        temp.innerHTML = p.content;
-        temp.querySelectorAll('b,strong').forEach(el=>{
-          const i=create('i','pre-highlight',el.innerHTML);
-          el.replaceWith(i);
+      renderParagraph(p, term) {
+        const div = document.createElement('div'); div.className = 'paragraph';
+        const idDiv = document.createElement('div'); idDiv.className = 'paragraph-id'; idDiv.textContent = `Đoạn ${p.id}`;
+        const titleDiv = document.createElement('div'); titleDiv.className = 'paragraph-title';
+        if (term && this.searchMode === 'title') {
+          const temp = document.createElement('div'); temp.textContent = p.title;
+          HighlightManager.highlightElement(temp, new RegExp(HighlightManager.escapeRegExp(term), 'gi'));
+          titleDiv.innerHTML = temp.innerHTML;
+        } else titleDiv.textContent = p.title;
+        const contentDiv = document.createElement('div'); contentDiv.className = 'paragraph-content';
+        const tempC = document.createElement('div'); tempC.innerHTML = p.content;
+        tempC.querySelectorAll('b,strong').forEach(el => { const i = document.createElement('i'); i.className = 'pre-highlight'; i.innerHTML = el.innerHTML; el.replaceWith(i); });
+        if (term && this.searchMode === 'content') HighlightManager.highlightElement(tempC, new RegExp(HighlightManager.escapeRegExp(term), 'gi'));
+        contentDiv.innerHTML = tempC.innerHTML;
+        const toggleBtn = document.createElement('span'); toggleBtn.className = 'toggle-btn';
+        const isExp = this.allExpanded || this.expandedParagraphs.has(p.id);
+        if (isExp) { contentDiv.classList.add('expanded'); toggleBtn.textContent = 'Thu gọn'; }
+        else { toggleBtn.textContent = 'Xem thêm'; }
+        toggleBtn.addEventListener('click', () => {
+          const expanded = contentDiv.classList.toggle('expanded');
+          toggleBtn.textContent = expanded ? 'Thu gọn' : 'Xem thêm';
+          if (expanded) this.expandedParagraphs.add(p.id); else this.expandedParagraphs.delete(p.id);
         });
-        if (regex && mode==='content') HighlightManager.highlightElement(temp,regex);
-        cd.innerHTML = temp.innerHTML;
-        // Toggle
-        const tb = create('span','toggle-btn');
-        const expanded = this.expanded.has(p.id);
-        cd.classList.toggle('expanded',expanded);
-        tb.textContent = expanded?'Thu gọn':'Xem thêm';
-        tb.onclick = () => {
-          const exp = cd.classList.toggle('expanded');
-          tb.textContent = exp?'Thu gọn':'Xem thêm';
-          exp?this.expanded.add(p.id):this.expanded.delete(p.id);
-        };
-        div.append(cd,tb);
-        // Actions
-        const eb=create('button','edit-btn','🖉'); eb.onclick=()=>this.showForm(p);
-        const db=create('button','delete-btn','🗑️'); db.onclick=()=>{ if(confirm(`Xác nhận xóa đoạn ${p.id}?`)){ this.pm.delete(p.id); this.render(); }};
-        div.append(eb,db);
-        // Timestamp
-        const ts=create('div','timestamp',new Date(p.createdAt).toLocaleString('vi-VN'));
-        div.append(ts);
-        // Highlights list
-        const hlDiv=create('div','highlight-list');
-        hlDiv.append(create('span','highlight-label','Highlights:'));
-        p.highlights.forEach(w=>{
-          const it=create('span','highlight-item',w);
-          it.onclick=()=>{ this.pm.unhighlight(p.id,w); this.render(); };
-          hlDiv.append(it);
+        const editBtn = document.createElement('button'); editBtn.className = 'edit-btn'; editBtn.textContent = '🖉'; editBtn.addEventListener('click', () => this.addInputForm(p));
+        const deleteBtn = document.createElement('button'); deleteBtn.className = 'delete-btn'; deleteBtn.textContent = '🗑️';
+        deleteBtn.addEventListener('click', () => { if (confirm(`Xác nhận xóa đoạn ${p.id}?`)) { this.pm.deleteParagraph(p.id); this.render(); } });
+        const tsDiv = document.createElement('div'); tsDiv.className = 'timestamp';
+        tsDiv.textContent = new Date(p.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        div.append(idDiv, titleDiv, contentDiv, toggleBtn, editBtn, deleteBtn, tsDiv);
+        const hlDiv = document.createElement('div'); hlDiv.className = 'highlight-list';
+        const label = document.createElement('span'); label.className = 'highlight-label'; label.textContent = 'Highlights:';
+        hlDiv.appendChild(label);
+        p.highlights.forEach(w => {
+          const item = document.createElement('span'); item.className = 'highlight-item'; item.textContent = ' ' + w;
+          item.addEventListener('click', () => this.removeHighlight(p.id, w));
+          hlDiv.appendChild(item);
         });
-        div.append(hlDiv);
-        return div;
+        div.appendChild(hlDiv);
+        this.paragraphsContainer.appendChild(div);
       }
       toggleAll() {
-        const all = this.toggleAllBtn.textContent.includes('Xem');
-        this.pm.getAll().forEach(p=> all?this.expanded.add(p.id):this.expanded.delete(p.id));
-        this.toggleAllBtn.textContent = all?'Thu gọn toàn bộ':'Xem toàn bộ';
+        this.allExpanded = !this.allExpanded;
+        this.toggleAllBtn.textContent = this.allExpanded ? 'Thu gọn toàn bộ' : 'Xem toàn bộ';
+        if (this.allExpanded) this.expandedParagraphs.clear();
         this.render();
       }
-      checkSelection(e) {
-        setTimeout(()=>{
+      onTextSelect(e) {
+        setTimeout(() => {
           const sel = window.getSelection();
           if (sel.rangeCount && sel.toString().trim()) {
-            const r=sel.getRangeAt(0), rect=r.getBoundingClientRect();
-            this.selRange=r;
-            this.toolbar.style.top = (rect.top+window.scrollY-40)+'px';
-            this.toolbar.style.left = (rect.left+window.scrollX)+'px';
-            this.toolbar.style.display='block';
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            this.selRange = range;
+            this.selToolbar.style.top = (rect.top + window.scrollY - 40) + 'px';
+            this.selToolbar.style.left = (rect.left + window.scrollX) + 'px';
+            this.selToolbar.style.display = 'block';
           } else this.hideToolbar();
-        },0);
+        }, 0);
       }
-      hideToolbar() { this.toolbar.style.display='none'; this.selRange=null; }
+      hideToolbar() { this.selToolbar.style.display = 'none'; this.selRange = null; }
       applyHighlight() {
         if (!this.selRange) return;
-        const txt=this.selRange.toString().trim(); if(!txt) return;
-        const span=create('span','custom-highlight',txt);
+        const text = this.selRange.toString().trim(); if (!text) return;
+        const span = document.createElement('span'); span.className = 'custom-highlight'; span.textContent = text;
         this.selRange.deleteContents(); this.selRange.insertNode(span);
-        const pid=parseInt(span.closest('.paragraph').querySelector('.paragraph-id').textContent.replace('Đoạn ',''),10);
-        const cont=span.closest('.paragraph').querySelector('.paragraph-content').innerHTML;
-        this.pm.update(pid,this.pm.paragraphs.find(p=>p.id===pid).title,cont);
-        this.pm.highlight(pid,txt);
+        const para = span.closest('.paragraph'); const pid = parseInt(para.querySelector('.paragraph-id').textContent.replace('Đoạn ', ''), 10);
+        const newC = para.querySelector('.paragraph-content').innerHTML;
+        this.pm.updateParagraph(pid, this.pm.paragraphs.find(p => p.id === pid).title, newC);
+        this.pm.highlightWord(pid, text);
         this.hideToolbar(); this.render();
       }
       applyUnhighlight() {
         if (!this.selRange) return;
-        const txt=this.selRange.toString().trim(); if(!txt) return;
-        const para=this.selRange.startContainer.parentElement.closest('.paragraph');
-        if(para){
-          para.querySelectorAll('.custom-highlight').forEach(el=>{ if(el.textContent===txt) el.replaceWith(document.createTextNode(txt)); });
-          const pid=parseInt(para.querySelector('.paragraph-id').textContent.replace('Đoạn ',''),10);
-          const cont=para.querySelector('.paragraph-content').innerHTML;
-          this.pm.update(pid,this.pm.paragraphs.find(p=>p.id===pid).title,cont);
-          this.pm.unhighlight(pid,txt);
+        const text = this.selRange.toString().trim(); if (!text) return;
+        const paraEl = this.selRange.startContainer.parentElement.closest('.paragraph');
+        if (paraEl) {
+          const pid = parseInt(paraEl.querySelector('.paragraph-id').textContent.replace('Đoạn ', ''), 10);
+          paraEl.querySelectorAll('.custom-highlight').forEach(el => { if (el.textContent === text) el.replaceWith(document.createTextNode(text)); });
+          const newC = paraEl.querySelector('.paragraph-content').innerHTML;
+          this.pm.updateParagraph(pid, this.pm.paragraphs.find(p => p.id === pid).title, newC);
+          this.pm.removeHighlight(pid, text);
         }
         this.hideToolbar(); this.render();
       }
+      removeHighlight(pid, word) {
+        const paraDiv = [...this.paragraphsContainer.children].find(div => parseInt(div.querySelector('.paragraph-id').textContent.replace('Đoạn ', ''), 10) === pid);
+        if (paraDiv) {
+          paraDiv.querySelectorAll('.custom-highlight').forEach(el => { if (el.textContent === word) el.replaceWith(document.createTextNode(word)); });
+          const updated = paraDiv.querySelector('.paragraph-content').innerHTML;
+          this.pm.updateParagraph(pid, this.pm.paragraphs.find(p => p.id === pid).title, updated);
+        }
+        this.pm.removeHighlight(pid, word);
+        this.render();
+      }
     }
-
-    document.addEventListener('DOMContentLoaded', () => new UI());
-  })();
+    document.addEventListener('DOMContentLoaded', () => new UIManager());
   </script>
 </body>
 </html>
