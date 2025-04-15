@@ -13,16 +13,21 @@
       background: #fff;
     }
     #controls {
-      display: flex; flex-wrap: wrap; gap: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
       margin-bottom: 20px;
+      align-items: center;
     }
-    input, button {
-      font-size: 16px; padding: 8px;
-      border: 1px solid #ccc; border-radius: 4px;
+    input, button, select {
+      font-size: 16px; 
+      padding: 8px;
+      border: 1px solid #ccc; 
+      border-radius: 4px;
     }
     input { flex: 1 1 200px; }
     button { cursor: pointer; background: #f0f0f0; }
-
+    
     .input-form, .paragraph {
       border: 1px solid #ccc;
       border-radius: 5px;
@@ -31,30 +36,40 @@
       margin-bottom: 15px;
     }
     .title-input { 
-      width:100%; margin-bottom:10px; 
-      font-size: 16px; padding: 6px;
+      width: 100%; 
+      margin-bottom: 10px; 
+      font-size: 16px; 
+      padding: 6px;
     }
     .content-editor {
-      width:100%; min-height:100px;
-      padding:8px; border:1px solid #ccc; border-radius:3px;
-      margin-bottom:10px; overflow-y:auto;
+      width: 100%;
+      min-height: 100px;
+      padding: 8px; 
+      border: 1px solid #ccc; 
+      border-radius: 3px;
+      margin-bottom: 10px; 
+      overflow-y: auto;
     }
     .content-editor:empty:before {
-      content: attr(placeholder); color: #aaa;
+      content: attr(placeholder);
+      color: #aaa;
     }
-
-    .paragraph-id { font-size:14px; color:#666; margin-bottom:5px; }
-
-    /* ===== Highlight tiêu đề ===== */
+    .paragraph-id { 
+      font-size: 14px; 
+      color: #666; 
+      margin-bottom: 5px; 
+    }
+    
+    /* Tiêu đề được highlight với nền #00FFFF khi chưa tìm kiếm */
     .paragraph-title {
-      font-weight:bold;
-      margin-bottom:8px;
+      font-weight: bold;
+      margin-bottom: 8px;
       background-color: rgba(0, 255, 255, 0.1);
       display: inline-block;
       padding: 2px 4px;
       border-radius: 3px;
     }
-
+    
     .paragraph-content {
       display: -webkit-box;
       -webkit-line-clamp: 3;
@@ -62,53 +77,60 @@
       overflow: hidden;
     }
     .paragraph-content.expanded { display: block; }
-
+    
     .toggle-btn {
-      display:inline-block; margin-top:6px;
-      font-size:14px; color:#007bff; cursor:pointer;
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 14px;
+      color: #007bff;
+      cursor: pointer;
     }
-
+    
     .paragraph .edit-btn,
     .paragraph .delete-btn {
-      background: none; border: none; cursor: pointer;
-      font-size: 18px; margin-left: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      margin-left: 10px;
       vertical-align: middle;
     }
-
-    /* Pre‑highlight: in nghiêng + nền đỏ nhạt */
+    
+    /* Pre‑highlight: từ được bôi đen ban đầu: in nghiêng với nền đỏ nhạt */
     .pre-highlight {
       background-color: rgba(255, 0, 0, 0.1);
       color: inherit;
       font-style: italic;
     }
-
-    /* Search‑highlight (vàng) */
+    
+    /* Search‑highlight: nền vàng */
     mark {
       background-color: yellow;
       color: inherit;
     }
-
+    
     /* Timestamp */
     .timestamp {
       font-size: 12px;
       color: #999;
       margin-top: 6px;
     }
-
+    
     /* Dark Mode */
     @media (prefers-color-scheme: dark) {
-      body {
-        background: #121212; color: #e0e0e0;
-      }
-      input, button {
-        background: #1e1e1e; color: #e0e0e0;
+      body { background: #121212; color: #e0e0e0; }
+      input, button, select {
+        background: #1e1e1e;
+        color: #e0e0e0;
         border-color: #333;
       }
       .input-form, .paragraph {
-        background: #1e1e1e; border-color: #333;
+        background: #1e1e1e;
+        border-color: #333;
       }
       .content-editor {
-        background: #1e1e1e; color: #e0e0e0;
+        background: #1e1e1e;
+        color: #e0e0e0;
         border-color: #333;
       }
       .toggle-btn { color: #81a1c1; }
@@ -120,47 +142,53 @@
         color: #fff;
         font-style: italic;
       }
-      mark {
-        background-color: #ffeb3b;
-        color: #000;
-      }
-      .timestamp {
-        color: #bbb;
-      }
+      mark { background-color: #ffeb3b; color: #000; }
+      .timestamp { color: #bbb; }
     }
   </style>
 </head>
 <body>
   <div id="controls">
-    <input type="text" id="searchInput" placeholder="Tìm kiếm từ...">
+    <input type="text" id="searchInput" placeholder="Nhập từ tìm kiếm...">
+    <!-- Dropdown chọn chế độ tìm kiếm -->
+    <select id="searchMode">
+      <option value="content">Tìm kiếm nội dung</option>
+      <option value="title">Tìm kiếm tiêu đề</option>
+    </select>
     <button id="addBtn">➕ Thêm văn bản</button>
   </div>
   <div id="inputArea"></div>
   <div id="paragraphs"></div>
-
+  
   <script>
+    // Biến toàn cục để lưu chế độ tìm kiếm: 'content' hoặc 'title'
+    let searchMode = 'content';
+    document.getElementById('searchMode').addEventListener('change', function() {
+      searchMode = this.value;
+      renderParagraphs(document.getElementById('searchInput').value.trim());
+    });
+    
     let paragraphs = [], lastId = 0;
-
     document.addEventListener('DOMContentLoaded', () => {
       loadParagraphs();
       document.getElementById('addBtn').addEventListener('click', addInputForm);
-      document.getElementById('searchInput')
-              .addEventListener('input', e => renderParagraphs(e.target.value.trim()));
+      document.getElementById('searchInput').addEventListener('input', 
+        e => renderParagraphs(e.target.value.trim()));
     });
-
+    
     function addInputForm() {
       const form = document.createElement('div');
       form.className = 'input-form';
-
+    
       const titleInput = document.createElement('input');
       titleInput.className = 'title-input';
       titleInput.placeholder = 'Tiêu đề đoạn văn';
-
+    
       const contentDiv = document.createElement('div');
       contentDiv.contentEditable = 'true';
       contentDiv.className = 'content-editor';
-      contentDiv.setAttribute('placeholder','Nhập nội dung...');
-
+      contentDiv.setAttribute('placeholder', 'Nhập nội dung...');
+    
       const saveBtn = document.createElement('button');
       saveBtn.textContent = '💾 Lưu đoạn văn';
       saveBtn.addEventListener('click', () => {
@@ -175,7 +203,7 @@
         const expireYears = paragraphs.length === 0 ? 10 : 5;
         const exp = new Date(now);
         exp.setFullYear(exp.getFullYear() + expireYears);
-
+    
         paragraphs.push({
           id: lastId,
           title,
@@ -187,17 +215,17 @@
         renderParagraphs(document.getElementById('searchInput').value.trim());
         form.remove();
       });
-
+    
       form.append(titleInput, contentDiv, saveBtn);
       document.getElementById('inputArea').appendChild(form);
       contentDiv.focus();
     }
-
+    
     function saveParagraphs() {
       localStorage.setItem('paragraphs', JSON.stringify(paragraphs));
       localStorage.setItem('lastId', lastId);
     }
-
+    
     function loadParagraphs() {
       const data = localStorage.getItem('paragraphs');
       if (data) paragraphs = JSON.parse(data);
@@ -208,54 +236,68 @@
       saveParagraphs();
       renderParagraphs('');
     }
-
+    
     function renderParagraphs(searchTerm) {
       const container = document.getElementById('paragraphs');
       container.innerHTML = '';
       const now = Date.now();
       paragraphs = paragraphs.filter(p => p.expireAt > now);
       paragraphs.sort((a, b) => a.id - b.id);
-
+    
       let list = paragraphs;
       if (searchTerm) {
         const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
-        list = paragraphs.filter(p => regex.test(stripHTML(p.content)));
+        if (searchMode === 'content') {
+          list = paragraphs.filter(p => regex.test(stripHTML(p.content)));
+        } else if (searchMode === 'title') {
+          list = paragraphs.filter(p => regex.test(p.title));
+        }
       }
-
+    
       list.forEach(p => {
         const div = document.createElement('div');
         div.className = 'paragraph';
-
+    
         const idDiv = document.createElement('div');
         idDiv.className = 'paragraph-id';
         idDiv.textContent = `Đoạn ${p.id}`;
-
+    
         const titleDiv = document.createElement('div');
         titleDiv.className = 'paragraph-title';
-        titleDiv.textContent = p.title;
-
+        // Nếu chế độ tìm kiếm là tiêu đề và có từ tìm kiếm, tiến hành highlight
+        if (searchTerm && searchMode === 'title') {
+          // Sử dụng đối tượng tạm để thực hiện highlight
+          const tempTitle = document.createElement('div');
+          tempTitle.textContent = p.title;
+          const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
+          highlightElement(tempTitle, regex);
+          titleDiv.innerHTML = tempTitle.innerHTML;
+        } else {
+          titleDiv.textContent = p.title;
+        }
+    
         const contentDiv = document.createElement('div');
         contentDiv.className = 'paragraph-content';
         const temp = document.createElement('div');
         temp.innerHTML = p.content;
-
-        // Chuyển <b>, <strong> thành <i class="pre-highlight">
+    
+        // 1) Chuyển <b>, <strong> thành <i class="pre-highlight">
         temp.querySelectorAll('b, strong').forEach(el => {
           const i = document.createElement('i');
           i.className = 'pre-highlight';
           i.innerHTML = el.innerHTML;
           el.replaceWith(i);
         });
-
-        // Nếu có searchTerm, highlight vàng
-        if (searchTerm) {
+    
+        // 2) Nếu có searchTerm và chế độ tìm kiếm nội dung, highlight vàng
+        if (searchTerm && searchMode === 'content') {
           const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
           highlightElement(temp, regex);
         }
-
+    
         contentDiv.innerHTML = temp.innerHTML;
-
-        // nút xem thêm / thu gọn
+    
+        // Nút xem thêm / thu gọn
         const toggleBtn = document.createElement('span');
         toggleBtn.className = 'toggle-btn';
         toggleBtn.textContent = 'Xem thêm';
@@ -263,48 +305,52 @@
           contentDiv.classList.toggle('expanded');
           toggleBtn.textContent = contentDiv.classList.contains('expanded') ? 'Thu gọn' : 'Xem thêm';
         });
-
-        // nút edit
+    
+        // Nút edit
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-btn';
         editBtn.textContent = '🖉';
         editBtn.addEventListener('click', () => startEdit(p));
-
-        // nút delete
+    
+        // Nút delete
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
         deleteBtn.textContent = '🗑️';
         deleteBtn.addEventListener('click', () => deletePara(p.id));
-
-        // timestamp
+    
+        // Timestamp
         const tsDiv = document.createElement('div');
         tsDiv.className = 'timestamp';
         const dt = new Date(p.createdAt);
         tsDiv.textContent = dt.toLocaleString('vi-VN', {
-          day: '2-digit', month: '2-digit', year: 'numeric',
-          hour: '2-digit', minute: '2-digit', second: '2-digit'
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
         });
-
+    
         div.append(idDiv, titleDiv, contentDiv, toggleBtn, editBtn, deleteBtn, tsDiv);
         container.appendChild(div);
       });
-
+    
       saveParagraphs();
     }
-
+    
     function startEdit(p) {
       const form = document.createElement('div');
       form.className = 'input-form';
-
+    
       const titleInput = document.createElement('input');
       titleInput.className = 'title-input';
       titleInput.value = p.title;
-
+    
       const contentDiv = document.createElement('div');
       contentDiv.contentEditable = 'true';
       contentDiv.className = 'content-editor';
       contentDiv.innerHTML = p.content;
-
+    
       const saveBtn = document.createElement('button');
       saveBtn.textContent = '💾 Lưu thay đổi';
       saveBtn.addEventListener('click', () => {
@@ -320,14 +366,14 @@
         renderParagraphs(document.getElementById('searchInput').value.trim());
         form.remove();
       });
-
+    
       form.append(titleInput, contentDiv, saveBtn);
       const area = document.getElementById('inputArea');
       area.innerHTML = '';
       area.appendChild(form);
       contentDiv.focus();
     }
-
+    
     function deletePara(id) {
       if (!confirm(`Xác nhận xóa đoạn ${id}?`)) return;
       paragraphs = paragraphs.filter(x => x.id !== id);
@@ -336,13 +382,13 @@
       saveParagraphs();
       renderParagraphs(document.getElementById('searchInput').value.trim());
     }
-
+    
     function stripHTML(html) {
       const d = document.createElement('div');
       d.innerHTML = html;
       return d.textContent || '';
     }
-
+    
     function highlightElement(el, regex) {
       Array.from(el.childNodes).forEach(node => {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -367,7 +413,7 @@
         }
       });
     }
-
+    
     function escapeRegExp(s) {
       return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
