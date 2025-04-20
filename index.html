@@ -12,7 +12,7 @@
     button { cursor: pointer; background: #f0f0f0; }
     .input-form, .paragraph { border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9; padding: 10px; margin-bottom: 15px; position: relative; }
     .title-input { width: 100%; margin-bottom: 10px; font-size: 16px; padding: 6px; }
-    .content-editor { width: 100%; min-height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 10px; overflow-y: auto; }
+    .content-editor { width: 100%; min-height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 3px; margin-bottom: 10px; overflow-y: auto; background: #f9f9f9; }
     .content-editor:empty:before { content: attr(placeholder); color: #aaa; }
     .paragraph-id { font-size: 14px; color: #666; margin-bottom: 5px; }
     .paragraph-title { font-weight: bold; margin-bottom: 8px; background-color: rgba(0,255,255,0.1); display: inline-block; padding: 2px 4px; border-radius: 3px; }
@@ -48,11 +48,8 @@
 </head>
 <body>
   <div id="controls">
-    <input type="text" id="searchInput" placeholder="Nhập từ tìm kiếm...">
-    <select id="searchMode">
-      <option value="content">Tìm kiếm nội dung</option>
-      <option value="title">Tìm kiếm tiêu đề</option>
-    </select>
+    <input type="text" id="searchTitleInput" placeholder="Tìm kiếm tiêu đề...">
+    <input type="text" id="searchContentInput" placeholder="Tìm kiếm nội dung...">
     <button id="addBtn">➕ Thêm văn bản</button>
     <button id="toggleAllBtn">Xem toàn bộ</button>
   </div>
@@ -120,8 +117,7 @@
         if (p) { p.title = title; p.content = content; this.save(); }
       }
       deleteParagraph(id) {
-        this.paragraphs = this.paragraphs.filter(x => x.id !== id)
-          .map((x, i) => ({ ...x, id: i + 1 }));
+        this.paragraphs = this.paragraphs.filter(x => x.id !== id).map((x, i) => ({ ...x, id: i + 1 }));
         this.lastId = this.paragraphs.length;
         this.save();
       }
@@ -142,7 +138,6 @@
     class UIManager {
       constructor() {
         this.pm = new ParagraphManager();
-        this.searchMode = 'content';
         this.allExpanded = false;
         this.expandedParagraphs = new Set();
         this.selRange = null;
@@ -151,8 +146,8 @@
         this.render();
       }
       cacheDOM() {
-        this.searchInput = document.getElementById('searchInput');
-        this.searchModeSelect = document.getElementById('searchMode');
+        this.searchTitleInput = document.getElementById('searchTitleInput');
+        this.searchContentInput = document.getElementById('searchContentInput');
         this.addBtn = document.getElementById('addBtn');
         this.toggleAllBtn = document.getElementById('toggleAllBtn');
         this.inputArea = document.getElementById('inputArea');
@@ -162,14 +157,24 @@
         this.selUBtn = document.getElementById('selUnhighlightBtn');
       }
       bindEvents() {
-        this.searchModeSelect.addEventListener('change', () => { this.searchMode = this.searchModeSelect.value; this.render(); });
         this.addBtn.addEventListener('click', () => this.addInputForm());
         this.toggleAllBtn.addEventListener('click', () => this.toggleAll());
-        this.searchInput.addEventListener('input', () => this.render());
+        this.searchTitleInput.addEventListener('input', () => this.render());
+        this.searchContentInput.addEventListener('input', () => this.render());
         this.paragraphsContainer.addEventListener('mouseup', e => this.onTextSelect(e));
         this.selHBtn.addEventListener('click', () => this.applyHighlight());
         this.selUBtn.addEventListener('click', () => this.applyUnhighlight());
         document.addEventListener('mousedown', e => { if (!this.selToolbar.contains(e.target)) this.hideToolbar(); });
+        document.addEventListener('mousedown', e => {
+          const formEl = this.inputArea.querySelector('.input-form');
+          if (formEl && !formEl.contains(e.target) && e.target !== this.addBtn) {
+            const titleInput = formEl.querySelector('.title-input');
+            const contentDiv = formEl.querySelector('.content-editor');
+            if (titleInput && contentDiv && !titleInput.value.trim() && !contentDiv.textContent.trim()) {
+              this.inputArea.innerHTML = '';
+            }
+          }
+        });
       }
       addInputForm(existing) {
         this.inputArea.innerHTML = '';
@@ -192,29 +197,32 @@
       }
       render() {
         this.paragraphsContainer.innerHTML = '';
-        const term = this.searchInput.value.trim();
+        const titleTerm = this.searchTitleInput.value.trim();
+        const contentTerm = this.searchContentInput.value.trim();
         let list = this.pm.getParagraphs();
-        if (term) {
-          const regex = new RegExp(HighlightManager.escapeRegExp(term), 'gi');
-          list = list.filter(p => this.searchMode === 'content'
-            ? regex.test(HighlightManager.stripHTML(p.content))
-            : regex.test(p.title));
+        if (titleTerm) {
+          const regexTitle = new RegExp(HighlightManager.escapeRegExp(titleTerm), 'i');
+          list = list.filter(p => regexTitle.test(p.title));
         }
-        list.forEach(p => this.renderParagraph(p, term));
+        if (contentTerm) {
+          const regexContent = new RegExp(HighlightManager.escapeRegExp(contentTerm), 'i');
+          list = list.filter(p => regexContent.test(HighlightManager.stripHTML(p.content)));
+        }
+        list.forEach(p => this.renderParagraph(p, titleTerm, contentTerm));
       }
-      renderParagraph(p, term) {
+      renderParagraph(p, titleTerm, contentTerm) {
         const div = document.createElement('div'); div.className = 'paragraph';
         const idDiv = document.createElement('div'); idDiv.className = 'paragraph-id'; idDiv.textContent = `Đoạn ${p.id}`;
         const titleDiv = document.createElement('div'); titleDiv.className = 'paragraph-title';
-        if (term && this.searchMode === 'title') {
+        if (titleTerm) {
           const temp = document.createElement('div'); temp.textContent = p.title;
-          HighlightManager.highlightElement(temp, new RegExp(HighlightManager.escapeRegExp(term), 'gi'));
+          HighlightManager.highlightElement(temp, new RegExp(HighlightManager.escapeRegExp(titleTerm), 'gi'));
           titleDiv.innerHTML = temp.innerHTML;
         } else titleDiv.textContent = p.title;
         const contentDiv = document.createElement('div'); contentDiv.className = 'paragraph-content';
         const tempC = document.createElement('div'); tempC.innerHTML = p.content;
         tempC.querySelectorAll('b,strong').forEach(el => { const i = document.createElement('i'); i.className = 'pre-highlight'; i.innerHTML = el.innerHTML; el.replaceWith(i); });
-        if (term && this.searchMode === 'content') HighlightManager.highlightElement(tempC, new RegExp(HighlightManager.escapeRegExp(term), 'gi'));
+        if (contentTerm) HighlightManager.highlightElement(tempC, new RegExp(HighlightManager.escapeRegExp(contentTerm), 'gi'));
         contentDiv.innerHTML = tempC.innerHTML;
         const toggleBtn = document.createElement('span'); toggleBtn.className = 'toggle-btn';
         const isExp = this.allExpanded || this.expandedParagraphs.has(p.id);
